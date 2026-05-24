@@ -365,17 +365,6 @@
 
     /* CONTAINER */
     .chat-container {
-        /*display: flex;
-        flex: 1;
-        flex-direction: column;
-        height: 100%;
-        width: 100%;
-        justify-content: flex-start;
-        align-items: flex-start;
-        overflow: visible;
-        overflow-y: auto;
-        overflow-x: visible;
-        */
         display: flex;
         flex: 1;
         flex-direction: column;
@@ -391,21 +380,6 @@
     }
 
     #chatMessages {
-        /* 
-        flex: 1;
-        overflow-y: auto;
-        overflow: visible;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        overflow-x: visible;
-        height: 100%;
-        align-items: center;
-        margin: 0 auto;
-        width: 700px;
-        max-width: 100%;
-         */
         flex: 1;
         overflow-y: auto;
         padding: 20px;
