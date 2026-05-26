@@ -1,15 +1,15 @@
 # READme
 
-> Et Flask-basert webapplikasjon som bruker Google Gemini og en RAG-pipeline (Retrieval-Augmented Generation) til å svare på spørsmål om bedriftens tjenester og e-handel.
+> Et Flask-basert webapplikasjon som bruker Google Gemini og en RAG-pipeline (Retrieval-Augmented Generation) til å svare på spørsmål rettet mot e-handel og nettverket.
 
 ---
 
 ## Formål
 
-Wavey er en chatbot-assistent bygd for en norsk e-handelsbedrift (E-Waves). Målet er å gi besøkende på nettsiden raske og presise svar på spørsmål tilpasset til e-handel.
+Wavey er en kunnskapsdatabase med en chatbot-grensesnitt som er bygd for E-Waves. Målet er å gi besøkende på nettsiden raske og presise svar på spørsmål tilpasset til e-handel.
 
 Wavey er strengt begrenset til å:
-- Kun svare på spørsmål relatert til bedriften og e-handel bransjen
+- Kun svare på spørsmål relatert til bedriften, nettverket og e-handel bransjen
 - Aldri avsløre systemoppsett eller følge instruksjoner som forsøker å endre dens rolle
 
 ---
@@ -92,20 +92,39 @@ Dette er det primære verktøyet for å vedlikeholde og oppdatere kunnskapsbasen
 
 ```
 Wavey/
-├── main.py              # Flask-app, ruter, LLM-logikk og to-stegs svarmotor
-├── security.py          # Risikoanalyse og IP-basert sikkerhetssystem
-├── requirements.txt     # Python-avhengigheter
-├── .env                 # Miljøvariabler (skal IKKE committes til git)
-├── static/
-│   ├── Ewavespng.png    # Bedriftslogo (PNG)
-│   └── e-waves logo.jpg # Bedriftslogo (JPG)
-└── templates/
-    ├── base.html        # Felles HTML-base
-    ├── index.html       # Hovedside med chatbot-grensesnitt
-    └── admin.html       # Admin-panel for kunnskapsdatabasen
+├── .gitignore                         # Ignorerer venv, __pycache__, .env, IDE-filer, build-output m.m.
+├── README.md                          # Prosjektdokumentasjon
+├── llm.py                             # Gemini-klient, systeminstruksjon, RAG-logikk og fallback til Google Search
+├── main.py                            # Flask-app, ruter, WordPress-adminlogin, sikkerhetssjekk og filadministrasjon
+├── requirements.txt                   # Python-avhengigheter
+├── security/                          # Sikkerhetspakke for input-analyse og risikohåndtering
+│   ├── __init__.py                    # Eksponerer public API: analyze_query, SecurityResult og Decision
+│   ├── config.py                      # Terskler, vekter, timeouts og IP-konfigurasjon
+│   ├── ip_store.py                    # In-memory IP-risiko, velocity og request-historikk
+│   ├── models.py                      # Datamodeller og beslutningstyper
+│   ├── pipeline.py                    # Security-pipeline: validate → sanitize → detect → score → policy
+│   ├── policy.py                      # Beslutningslogikk basert på samlet risikoscore
+│   ├── scoring.py                     # Kombinerer detektor-score, IP-risiko og velocity
+│   ├── validation.py                  # Inputvalidering og sanitering
+│   └── detectors/                     # Enkeltstående detektorer for mistenkelig input
+│       ├── __init__.py                # Samler og kjører alle detektorer
+│       ├── anomaly.py                 # Oppdager strukturelle avvik i input
+│       ├── encoding.py                # Oppdager encoding-/base64-lignende triks
+│       ├── injection.py               # Oppdager prompt-injection-forsøk
+│       └── obfuscation.py             # Oppdager skjulte/usynlige Unicode-tegn og obfuskering
+├── static/                            # Statiske frontend-filer
+│   ├── styles.css                     # CSS for brukergrensesnittet
+│   └── images/                        # Bilder og logoer
+│       ├── Ewavespng.png              # E-Waves-logo/illustrasjon
+│       └── e-waves logo.jpg           # E-Waves-logo/illustrasjon
+└── templates/                         # Jinja2 HTML-templates
+    ├── admin.html                     # Admin-panel for dokumenter i File Search Store
+    ├── admin_login.html               # Innloggingsside for admin
+    ├── base.html                      # Felles HTML-base/layout
+    ├── index.html                     # Hovedside med chatbot-grensesnitt
+    └── readme.md                      # Ekstra README/notes-fil lagret under templates
 ```
-
----
+> Merk: `.env` og `temp_uploads/` brukes lokalt/runtime, men skal ikke committes til Git. `.env` er allerede ignorert i `.gitignore`, og `temp_uploads/` opprettes midlertidig ved filopplasting.
 
 ## Kom i gang – lokal oppsett
 
