@@ -219,7 +219,8 @@
                             Eksport
                         </div>
                         <div class="topic-dropdown">
-                            <div class="topic-option">Hvilke markeder bør vi prioritere for eksport basert på produktet vårt?</div>
+                            <div class="topic-option">Hvilke markeder bør vi prioritere for eksport basert på produktet
+                                vårt?</div>
                             <div class="topic-option">Hvordan optimaliserer vi logistikk og distribusjon til utlandet?
                             </div>
                             <div class="topic-option">Skal vi bruke distributører eller selge direkte i nye markeder?
@@ -270,16 +271,24 @@
 
         <!-- INPUT  -->
         <form id="queryForm" class="chat-input">
-            <textarea name="query" id="queryInput" placeholder="Skriv her ..."></textarea>
-            <button id="submitBtn" type="submit">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    class="lucide lucide-send-icon lucide-send">
-                    <path
-                        d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" />
-                    <path d="m21.854 2.147-10.94 10.939" />
-                </svg>
-            </button>
+            <div class="chat-input-row">
+                <textarea name="query" id="queryInput" placeholder="Skriv her ..."></textarea>
+                <button id="submitBtn" type="submit">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="lucide lucide-send-icon lucide-send">
+                        <path
+                            d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" />
+                        <path d="m21.854 2.147-10.94 10.939" />
+                    </svg>
+                </button>
+                <button id="stopBtn" type="button" style="display:none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="6" y="6" width="12" height="12" rx="2" />
+                    </svg>
+                </button>
+            </div>
         </form>
 
     </div>
@@ -302,11 +311,33 @@
     const input = document.getElementById("queryInput");
     const chat = document.getElementById("chatMessages")
 
+    const stopBtn = document.getElementById("stopBtn");
+    const submitBtn = document.getElementById("submitBtn");
+    let stopTyping = false;
+    let queryAbortController = null;
+
+    const resizeTextarea = () => {
+        input.style.height = "auto";
+        input.style.height = `${Math.min(input.scrollHeight, 240)}px`;
+    };
+
+    input.addEventListener("input", resizeTextarea);
+    window.addEventListener("load", resizeTextarea);
+
+    input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            form.requestSubmit();
+        }
+    });
+
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
 
         const text = input.value.trim();
         if (!text) return;
+        submitBtn.style.display = "none";
+        stopBtn.style.display = "flex";
 
         const welcome = document.querySelector(".welcome");
         if (welcome) welcome.remove();
@@ -320,13 +351,20 @@
         chat.appendChild(indicator);
         chat.scrollTop = chat.scrollHeight;
 
+        stopTyping = false;
+        if (queryAbortController) {
+            queryAbortController.abort();
+        }
+        queryAbortController = new AbortController();
+
         try {
             const formData = new FormData();
             formData.append("query", text);
 
             const response = await fetch("/query", {
                 method: "POST",
-                body: formData
+                body: formData,
+                signal: queryAbortController.signal
             });
 
             const data = await response.json();
@@ -336,8 +374,17 @@
             await typeMessage(botMsg, data.response || data.error);
 
         } catch (err) {
-            indicator.remove();
-            addMessage("Noe gikk galt, vennligst prøv igjen", "bot")
+            if (err.name === "AbortError") {
+                indicator.remove();
+                addMessage("Forespørselen ble avbrutt.", "bot");
+            } else {
+                indicator.remove();
+                addMessage("Noe gikk galt, vennligst prøv igjen", "bot");
+            }
+            stopBtn.style.display = "none";
+            submitBtn.style.display = "flex";
+        } finally {
+            queryAbortController = null;
         }
 
     });
@@ -382,19 +429,42 @@
     function addMessage(text, type) {
         const msg = document.createElement("div");
         msg.classList.add("message", type);
-        if (text) msg.innerText = text;
+
+        if (text) {
+            msg.innerHTML = type === "bot" ? marked.parse(text) : document.createTextNode(text).textContent;
+            if (type !== "bot") msg.innerText = text;
+        }
         chat.appendChild(msg);
         chat.scrollTop = chat.scrollHeight;
         return msg;
     }
 
     async function typeMessage(el, text, speed = 18) {
+        stopTyping = false;
+
+        let current = "";
         for (let i = 0; i < text.length; i++) {
-            el.innerText += text[i];
+            if (stopTyping) break;
+            current += text[i];
+            el.innerHTML = marked.parse(current);
             chat.scrollTop = chat.scrollHeight;
             await new Promise(r => setTimeout(r, speed));
         }
+
+        if (!stopTyping) el.innerHTML = marked.parse(text);
+        stopBtn.style.display = "none";
+        submitBtn.style.display = "flex";
     }
+
+    stopBtn.addEventListener("click", () => {
+        stopTyping = true;
+        if (queryAbortController) {
+            queryAbortController.abort();
+        }
+        stopBtn.style.display = "none";
+        submitBtn.style.display = "flex";
+    });
+
 </script>
 
 
