@@ -58,43 +58,6 @@ def admin_login_wp(username, password):
 # Routes
 # --------------------------------------------------
 
-# @app.route("/query", methods=["POST"])
-# def query():
-#     print("➡️ REQUEST STARTED")
-
-#     try:
-#         user_query = request.form.get("query")
-#         print("STEP 1: got query")
-
-#         if not user_query:
-#             return jsonify({"error": "Missing query"}), 400
-
-#         client_ip = _get_client_ip(request)
-#         print("STEP 2: got IP")
-
-#         # SECURITY (NO REDIS VERSION)
-#         sec_result = security.analyze_query(user_query, client_ip)
-#         print("STEP 3: security done")
-
-#         # OPTIONAL: you could block here if needed
-#         if sec_result.decision == "BLOCK":
-#             return jsonify({"error": "Blocked"}), 403
-
-#         if sec_result.decision == "LIMIT":
-#             time.sleep(2)
-
-#         result = generate_website_answer(sec_result.sanitized_query)
-#         print("STEP 4: LLM done")
-
-#         return jsonify({
-#             "response": result,
-#             "risk": sec_result.score,
-#             "decision": sec_result.decision
-#         })
-
-#     except Exception as e:
-#         print("ERROR:", e)
-#         return jsonify({"error": "Server error"}), 500
 
 import logging
 logger = logging.getLogger(__name__)

@@ -24,7 +24,6 @@ client = genai.Client(api_key=GEMINI_API_KEY)
 LLM_TIMEOUT_SECONDS = 200
 FALLBACK_TOKEN = "FALLBACK_TO_SEARCH"
 
-
 _SYSTEM_INSTRUCTION = """
 
 Identity and Role:
@@ -184,8 +183,6 @@ def shutdown_executor():
         _executor = None
 
 
-
-
 # --------------------------------------------------
 # Gemini Calls
 # --------------------------------------------------
@@ -238,7 +235,6 @@ def _ask_web(clean_query: str) -> str | None:
     except Exception as e:
         print(f"[_ask_web] Error: {e}")
         return None
-
 
 def generate_website_answer(query):
     
