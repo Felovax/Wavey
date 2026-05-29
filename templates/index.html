@@ -313,8 +313,8 @@
 
     const stopBtn = document.getElementById("stopBtn");
     const submitBtn = document.getElementById("submitBtn");
-    let stopTyping = false;
-    let queryAbortController = null;
+    let activeQuery = null;
+    let currentTypingSession = null;
 
     const resizeTextarea = () => {
         input.style.height = "auto";
@@ -336,6 +336,18 @@
 
         const text = input.value.trim();
         if (!text) return;
+
+        if (activeQuery) {
+            activeQuery.controller.abort();
+        }
+        if (currentTypingSession) {
+            currentTypingSession.cancelled = true;
+            if (currentTypingSession.el && currentTypingSession.el.parentElement) {
+                currentTypingSession.el.remove();
+            }
+            currentTypingSession = null;
+        }
+
         submitBtn.style.display = "none";
         stopBtn.style.display = "flex";
 
@@ -351,11 +363,8 @@
         chat.appendChild(indicator);
         chat.scrollTop = chat.scrollHeight;
 
-        stopTyping = false;
-        if (queryAbortController) {
-            queryAbortController.abort();
-        }
-        queryAbortController = new AbortController();
+        const controller = new AbortController();
+        activeQuery = { controller };
 
         try {
             const formData = new FormData();
@@ -364,27 +373,37 @@
             const response = await fetch("/query", {
                 method: "POST",
                 body: formData,
-                signal: queryAbortController.signal
+                signal: controller.signal
             });
 
             const data = await response.json();
             indicator.remove();
 
             const botMsg = addMessage("", "bot");
-            await typeMessage(botMsg, data.response || data.error);
+            currentTypingSession = { el: botMsg, cancelled: false };
+            await typeMessage(botMsg, data.response || data.error, currentTypingSession);
+            currentTypingSession = null;
 
         } catch (err) {
+            indicator.remove();
+            if (activeQuery?.controller !== controller) {
+                return;
+            }
+
             if (err.name === "AbortError") {
-                indicator.remove();
                 addMessage("Forespørselen ble avbrutt.", "bot");
             } else {
-                indicator.remove();
                 addMessage("Noe gikk galt, vennligst prøv igjen", "bot");
             }
+
             stopBtn.style.display = "none";
             submitBtn.style.display = "flex";
         } finally {
-            queryAbortController = null;
+            if (activeQuery?.controller === controller) {
+                activeQuery = null;
+                stopBtn.style.display = "none";
+                submitBtn.style.display = "flex";
+            }
         }
 
     });
@@ -439,27 +458,39 @@
         return msg;
     }
 
-    async function typeMessage(el, text, speed = 18) {
-        stopTyping = false;
-
+    async function typeMessage(el, text, session, speed = 18) {
         let current = "";
         for (let i = 0; i < text.length; i++) {
-            if (stopTyping) break;
+            if (session.cancelled || currentTypingSession !== session) {
+                if (session.el && session.el.parentElement) {
+                    session.el.remove();
+                }
+                return;
+            }
             current += text[i];
             el.innerHTML = marked.parse(current);
             chat.scrollTop = chat.scrollHeight;
             await new Promise(r => setTimeout(r, speed));
         }
 
-        if (!stopTyping) el.innerHTML = marked.parse(text);
+        if (session.cancelled || currentTypingSession !== session) {
+            if (session.el && session.el.parentElement) {
+                session.el.remove();
+            }
+            return;
+        }
+
+        el.innerHTML = marked.parse(text);
         stopBtn.style.display = "none";
         submitBtn.style.display = "flex";
     }
 
     stopBtn.addEventListener("click", () => {
-        stopTyping = true;
-        if (queryAbortController) {
-            queryAbortController.abort();
+        if (activeQuery) {
+            activeQuery.controller.abort();
+        }
+        if (currentTypingSession) {
+            currentTypingSession.cancelled = true;
         }
         stopBtn.style.display = "none";
         submitBtn.style.display = "flex";
