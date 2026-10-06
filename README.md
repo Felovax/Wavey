@@ -123,8 +123,27 @@ Wavey/
     ├── base.html                      # Felles HTML-base/layout
     ├── index.html                     # Hovedside med chatbot-grensesnitt
     └── readme.md                      # Ekstra README/notes-fil lagret under templates
+└── wordpress-plugin/                  # WordPress-plugin som installeres på ewaves.no (PHP, kjøres ikke av Flask)
+    └── ewaves-wavey-tips/             # QR-tips fra arrangementer → godkjenning → File Search Store
+        ├── ewaves-wavey-tips.php      # Selve pluginen: kortkode, REST-endepunkt, Gemini-kall, godkjenning, innstillinger, QR-generator
+        ├── LES-MEG.md                 # Installasjon og daglig bruk
+        └── assets/                    # tips.js (opptak → WAV), tips.css, qrcode.js (MIT, Kazuhiko Arase)
 ```
 > Merk: `.env` og `temp_uploads/` brukes lokalt/runtime, men skal ikke committes til Git. `.env` er allerede ignorert i `.gitignore`, og `temp_uploads/` opprettes midlertidig ved filopplasting.
+
+## WordPress-plugin: QR-tips fra arrangementer
+
+Mappen `wordpress-plugin/ewaves-wavey-tips/` inneholder en WordPress-plugin som samler tips fra deltakere på E-Waves-arrangementer og legger dem i den **samme kunnskapsbasen** (File Search Store) som Wavey bruker.
+
+**Flyt:** Deltakeren scanner en QR-kode, som åpner `ewaves.no/tips/?arrangement=<navn>`. Der snakker deltakeren inn et tips (maks 60 sekunder) eller skriver det. Gemini transkriberer, fjerner navn og strukturerer tipset. Tipset havner i WordPress med status «Venter på gjennomgang». Når admin klikker **Publiser**, lastes tipset opp til File Search Store.
+
+- Pluginen er skrevet i PHP fordi WordPress/Kinsta ikke kan kjøre Python. Den snakker direkte med Gemini API og trenger derfor ikke at Flask-appen kjører.
+- Den bruker samme `GEMINI_API_KEY` og `FILE_SEARCH_STORE_NAME` som Wavey. Disse legges inn i WordPress under **Innstillinger → Wavey-tips** eller i `wp-config.php`, aldri i Git.
+- Lydopptak lagres aldri. Uformelle samtaler tas ikke opp. Alt er frivillig, anonymt og godkjennes av admin.
+- **Installering:** Zip mappen `ewaves-wavey-tips` slik at mappen ligger øverst i zip-filen. Last den opp under Utvidelser → Legg til ny → Last opp utvidelse. Test alltid på Kinsta-staging først. Se `LES-MEG.md` i mappen.
+- **Merk:** Godkjente tips som senere skal fjernes, må også slettes i Waveys adminpanel (`/admin`). Å slette dem i WordPress fjerner dem ikke fra kunnskapsbasen.
+
+---
 
 ## Kom i gang – lokal oppsett
 

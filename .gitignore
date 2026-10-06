@@ -30,3 +30,6 @@ build/
 # Testing
 coverage/
 .nyc_output/
+
+# WordPress-plugin-zip (bygges lokalt fra wordpress-plugin/, skal ikke i Git)
+*.zip
